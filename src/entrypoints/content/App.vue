@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { browser } from 'wxt/browser';
 import BookmarkTree from './components/BookmarkTree.vue';
 
@@ -15,12 +15,21 @@ const close = () => {
 
 // 搜索关键词
 const searchQuery = ref('');
+const searchInput = ref<HTMLInputElement | null>(null);
 const bookmarks = ref<any[]>([]);
 
 // 显示模式
 const displayMode = ref<'tree' | 'list'>('tree');
 const toggleDisplayMode = () => {
   displayMode.value = displayMode.value === 'tree' ? 'list' : 'tree';
+};
+
+// 聚焦到搜索框
+const focusSearchInput = () => {
+  // 使用 nextTick 确保 DOM 已更新
+  nextTick(() => {
+    searchInput.value?.focus();
+  });
 };
 
 // 获取书签数据
@@ -31,6 +40,8 @@ const fetchBookmarks = async () => {
     console.log('Response from background:', response);
     if (response.success) {
       bookmarks.value = response.data || [];
+      // 获取数据后聚焦到搜索框
+      focusSearchInput();
     } else {
       console.error('Failed to get bookmarks:', response.error);
     }
@@ -74,7 +85,15 @@ const handleDelete = async (bookmark: any) => {
 };
 
 // 初始化时获取书签数据
-onMounted(fetchBookmarks);
+onMounted(() => {
+  fetchBookmarks();
+  // 监听 TOGGLE_UI 消息，每次打开时都聚焦
+  browser.runtime.onMessage.addListener((message: any) => {
+    if (message.type === 'TOGGLE_UI') {
+      focusSearchInput();
+    }
+  });
+});
 </script>
 
 <template>
@@ -98,6 +117,7 @@ onMounted(fetchBookmarks);
             <div class="flex items-center space-x-4">
               <div class="relative flex-1">
                 <input
+                  ref="searchInput"
                   v-model="searchQuery"
                   type="text"
                   placeholder="搜索书签..."

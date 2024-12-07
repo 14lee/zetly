@@ -1,12 +1,13 @@
 import { browser } from 'wxt/browser';
 
 interface Message {
-  type: 'GET_BOOKMARKS' | 'UPDATE_BOOKMARK' | 'DELETE_BOOKMARK';
+  type: 'GET_BOOKMARKS' | 'UPDATE_BOOKMARK' | 'DELETE_BOOKMARK' | 'OPEN_TAB';
   bookmark?: {
     id: string;
     title?: string;
     url?: string;
   };
+  url?: string;
 }
 
 interface ResponseData {
@@ -52,6 +53,15 @@ export default defineBackground({
                 sendResponse({ success: true, data: newTree[0].children });
               } else {
                 sendResponse({ success: false, error: 'No bookmark data provided' });
+              }
+              break;
+
+            case 'OPEN_TAB':
+              if (msg.url) {
+                await browser.tabs.create({ url: msg.url });
+                sendResponse({ success: true });
+              } else {
+                sendResponse({ success: false, error: 'No URL provided' });
               }
               break;
 

@@ -20,6 +20,23 @@ const emit = defineEmits<{
   delete: [bookmark: Bookmark];
 }>();
 
+// 处理书签点击
+const handleBookmarkClick = async (bookmark: Bookmark) => {
+  if (bookmark.url) {
+    try {
+      // 使用 chrome.runtime.sendMessage 发送消息
+      await chrome.runtime.sendMessage({
+        type: 'OPEN_TAB',
+        url: bookmark.url
+      });
+      // 关闭书签管理器
+      window.dispatchEvent(new CustomEvent('close-overlay'));
+    } catch (error) {
+      console.error('Error opening bookmark:', error);
+    }
+  }
+};
+
 // 将书签树扁平化为一维数组
 const flattenBookmarks = (bookmarks: Bookmark[]): Bookmark[] => {
   const result: Bookmark[] = [];
@@ -61,7 +78,7 @@ const isMatch = (bookmark: Bookmark, searchTerm: string): boolean => {
   return false;
 };
 
-// 过滤并处理��签树
+// 过滤并处理书签树
 const processBookmarks = (bookmarks: Bookmark[], searchTerm: string): Bookmark[] => {
   if (!searchTerm) return bookmarks;
 
@@ -130,7 +147,8 @@ const getFavicon = (url?: string) => {
 
           <!-- 书签链接 -->
           <div v-else
-               class="flex items-center p-2 hover:bg-gray-100 rounded-lg group ml-4">
+               class="flex items-center p-2 hover:bg-gray-100 rounded-lg group ml-4 cursor-pointer"
+               @click="handleBookmarkClick(bookmark)">
             <img :src="getFavicon(bookmark.url)" :alt="bookmark.title" class="w-4 h-4 mr-3">
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-gray-900 truncate">{{ bookmark.title }}</div>
@@ -171,7 +189,8 @@ const getFavicon = (url?: string) => {
     <!-- 列表视图 -->
     <template v-else>
       <div v-for="bookmark in filteredBookmarks" :key="bookmark.id"
-           class="flex items-center p-2 hover:bg-gray-100 rounded-lg group">
+           class="flex items-center p-2 hover:bg-gray-100 rounded-lg group cursor-pointer"
+           @click="handleBookmarkClick(bookmark)">
         <img :src="getFavicon(bookmark.url)" :alt="bookmark.title" class="w-4 h-4 mr-3">
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium text-gray-900 truncate">{{ bookmark.title }}</div>
